@@ -65,6 +65,11 @@ const cartReducer = (state, action) => {
             : item
         ),
       };
+      case "CLEAR_CART":
+      return {
+        ...state,
+        cart: [], // Reset the cart to an empty array
+      };
 
     default:
       return state;

@@ -6,6 +6,7 @@ const CartPage = () => {
   const { cart, dispatch } = useContext(CartContext);
   const [productHistory, setProductHistory] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOrderConfirmed, setIsOrderConfirmed] = useState(false); // State for order confirmation
 
   // Calculate Total Price
   const calculateTotal = () => {
@@ -49,7 +50,7 @@ const CartPage = () => {
     });
   }, [cart]);
 
-  // Handle downloading order details as PDF
+  // Helper function to convert image URLs to Base64
   const handleDownloadPDF = async () => {
     const doc = new jsPDF();
 
@@ -75,6 +76,7 @@ const CartPage = () => {
         img.onerror = reject;
       });
 
+    // Loop through cart items to create the PDF
     for (const item of cart) {
       const productDetails = `${item.name} - $${item.price} × ${
         item.quantity
@@ -82,6 +84,7 @@ const CartPage = () => {
       doc.text(productDetails, 20, yPosition);
       yPosition += 10;
 
+      // Check if the item has an image and add it to the PDF
       if (item.img) {
         try {
           const imgData = await getBase64Image(item.img); // Convert image to Base64
@@ -111,6 +114,17 @@ const CartPage = () => {
 
     // Save the PDF
     doc.save("order-details.pdf");
+  };
+
+  const handleCloseSuccessModal = () => {
+    setIsOrderConfirmed(false); // Reset confirmation state to allow reopening
+    setIsModalOpen(false); // Also close the confirmation modal
+    dispatch({ type: "CLEAR_CART" });
+
+  };
+
+  const handleConfirmOrder = () => {
+    setIsOrderConfirmed(true); // Show the confirmation message after order confirmation
   };
 
   return (
@@ -194,7 +208,7 @@ const CartPage = () => {
             </tbody>
           </table>
 
-          <div className="grid  grid-cols-1 md:grid-cols-5 gap-5  pt-5">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-5 pt-5">
             <div className="mt-6 md:col-span-2">
               <p className="text-lg font-bold">
                 Total: ${calculateTotal().toFixed(2)}
@@ -216,7 +230,7 @@ const CartPage = () => {
             </div>
 
             {/* Product History Box */}
-            <div className="border p-4 mb-6 md:col-span-3 rounded-md shadow-md   bg-gray-100">
+            <div className="border p-4 mb-6 md:col-span-3 rounded-md shadow-md bg-gray-100">
               <h2 className="text-xl font-bold mb-3">Product History</h2>
               {productHistory.length === 0 ? (
                 <p className="text-gray-500">
@@ -225,11 +239,11 @@ const CartPage = () => {
               ) : (
                 <ul>
                   {productHistory.map((item) => (
-                    <li key={item.id} className="mb-2 space-x-3  border-b">
+                    <li key={item.id} className="mb-2 space-x-3 border-b">
                       <span className="font-bold">{item.name}</span>{" "}
                       <img
                         src={item.img}
-                        className="size-11 object-cover mx-auto inline-flex "
+                        className="size-11 object-cover mx-auto inline-flex"
                         alt=""
                       />{" "}
                       <span>
@@ -246,7 +260,7 @@ const CartPage = () => {
       )}
 
       {/* Modal for Order Details */}
-      {isModalOpen && (
+      {isModalOpen && !isOrderConfirmed && (
         <div
           className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center"
           onClick={() => setIsModalOpen(false)}
@@ -267,14 +281,11 @@ const CartPage = () => {
             <div id="order-details">
               <ul>
                 {cart.map((item) => (
-                  <li
-                    key={item.id}
-                    className="mb-2 flex items-center border-b  "
-                  >
+                  <li key={item.id} className="mb-2 flex items-center border-b">
                     <span className="font-bold">{item.name}</span> -{" "}
                     <img
                       src={item.img}
-                      className="size-11 object-cover mx-auto   "
+                      className="size-11 object-cover mx-auto"
                       alt=""
                     />{" "}
                     - ${item.price} × {item.quantity} = $
@@ -294,10 +305,38 @@ const CartPage = () => {
             </div>
             <div className="mt-4 flex justify-between">
               <button
-                onClick={handleDownloadPDF}
+                onClick={handleConfirmOrder}
+                className="px-4 py-2 bg-green-500 text-white rounded"
+              >
+                Confirm Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Message after Order Confirmation */}
+      {isOrderConfirmed && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h2 className="text-xl font-bold mb-4">Order Confirmed</h2>
+            <p className="text-lg">
+              Your order has been confirmed successfully!
+            </p>
+
+            {/* Buttons (Download and Close) */}
+            <div className="mt-4 flex justify-between">
+              <button
+                onClick={handleDownloadPDF} // Function to download PDF
                 className="px-4 py-2 bg-blue-500 text-white rounded"
               >
                 Download PDF
+              </button>
+              <button
+                onClick={handleCloseSuccessModal} // Close and reset the modal
+                className="px-4 py-2 bg-gray-500 text-white rounded"
+              >
+                Close
               </button>
             </div>
           </div>
